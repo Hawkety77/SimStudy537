@@ -1,0 +1,18 @@
+---
+title: "Mini Project 2"
+author: "Talmage Hilton, Gavin Hatch, Ty Hawkes"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+fontsize: 11pt
+geometry: margin=1in
+header-includes:
+- \usepackage{setspace}
+- \singlespacing
+---
+
+```{r}
+print("test")
+```
