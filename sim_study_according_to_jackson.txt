@@ -1,0 +1,35 @@
+STAT 537 Simulation
+
+Simulations for
+Compound Symmetric
+Random coefficients
+AR (1)
+
+Each subject among two test groups
+Each subject will have 5 observations across time
+CONTROL GROUP
+- Beta0 + 0*x
+TMT GROUP
+- Beta0 + Beta1*x
+
+Null hypothesis:
+- Alpha level of H0: Beta1_control = Beta1_tmt
+- You decide how big the Beta0s are
+- But you test the Beta1s
+
+Hints:
+— may need to use cholesky decomposition
+— first time through slopes should be 0
+— second time through tmt slope will be big
+
+TEST POWER AND ALPHA LEVELS using both F test and likelihood ratio test
+Determinant of compound symmetric ~= Random coefficients determinant ~= AR 1 determinant
+Choose either
+- form of unbalanced and balanced data comparisons
+- Form of small n and large n data comparisons
+
+Four pages altogether-3 pages of text
+
+“Due to the fact that”
+“Fewer” vs “less”
+“Data are”

@@ -1,0 +1,60 @@
+Generate data under three variance-covariance structures:
+1) Compound Symmetric (\sigma^2_e, \sigma^2_s)
+2) Random coefficients: ZGZ'+R (for intercepts and slopes)
+3) AR(1)
+det |CS| approx = |RC| approx = |AR(1)|
+
+Two treatment groups, where each subject has 5 observations
+
+Control: beta_0 + 0*x_i
+Tmt: beta_0 + beta_1*x_i
+
+Test the null hypothesis:
+H_0: beta_1,control = beta_1,tmt at the alpha level
+
+(Simulate about 1000 times)
+1) Simulate data under null to estimate size
+2) Simulate data under alternative hypothesis (just one)
+3) Use F test and LRT
+
+=====================================================================================
+
+Use cholesky decomposition: V = CC'
+Generate data that has covariance V=\sigma^2I => Var(CV) = CVar(V)C' = C\sigma^2IC' = \sigma^2CC'
+
+Details:
+Choose a covariance matrix $V$ for one subject’s repeated measures (size $5\times5$ since there are 5 observations per subject).
+
+Compound symmetric (CS): all variances equal $\sigma^2$, all covariances $\rho\sigma^2$.
+
+Random coefficients (RC): covariance implied by random intercept and slope, e.g.
+$V = \sigma_b^2 1 1' + \sigma_c^2 x x' + \sigma_e^2 I$.
+
+AR(1): $(V)_{ij} = \sigma^2\rho^{|i-j|}$.
+
+Compute the Cholesky factorization
+$V = C C'$,
+where $C$ is lower-triangular.
+
+Generate independent standard normal vectors
+$z_i \sim N(0,I_5)$ for each subject.
+
+Induce correlation:
+$y_i = X_i\beta + C z_i$,
+which ensures $\text{Var}(y_i) = C \text{Var}(z_i) C' = C I C' = V$.
+
+===================================================================================
+
+Things to vary (still check the Ftest vs. LRT): (pick which combo we want to do)
+1) Balanced vs. Unbalanced
+2) Small n and large n
+
+Write-up:
+3 pages of writing, and 1 page of figures (he doesn't want to read it at all)
+- Don't ever say "due to the fact that", just say because
+- The word data is plural (the data are)
+- Less and fewer (it's absolutely butchered in this country) --- it's an absolutely an abomination
+    - There is less soil/sand
+    - Fewer used with countable items
+- Same with number (discrete)and amount (uncountable)
+
