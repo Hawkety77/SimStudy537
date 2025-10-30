@@ -13,6 +13,29 @@ header-includes:
 - \singlespacing
 ---
 
-```{r}
-print("test")
-```
+# Intro
+- Motivation, why
+# Data Generation
+- Description of data generation process
+# Simulation Design
+- Description of simulation design
+- Tests used (F and LRT)
+# Results
+- Summary tables and figures
+
+- for large n 
+----------------------------------------------
+------------- compound - random - autoregres -
+- type1 LRT -
+- type1 F   -
+- power LRT -
+- power F   -
+
+
+- for small n
+----------------------------------------------
+------------- compound - random - autoregres -
+- type1 LRT -
+- type1 F   -
+- power LRT -
+- power F   -
