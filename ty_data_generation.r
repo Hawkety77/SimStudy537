@@ -1,5 +1,7 @@
 # libraries
 library(tidyverse)
+library(lme4)
+library(lmerTest)
 
 generate_compound_symmetric_covariance_matrix <- function(sigma2, rho, n_measures){
   V_within <- sigma2 * ((1 - rho) * diag(n_measures) + rho * matrix(1, n_measures, n_measures))
@@ -66,14 +68,97 @@ generate_data <- function(beta_0, beta_1, n_subjects_per_treatment, V){
 
 }
 
-# Generate Data
+# Example Generate Data
 beta_0 <- 10
 beta_1 <- 5
 n_subjects_per_treatment <- 4
 
-generate_data(beta_0, beta_1, n_subjects_per_treatment, V_comp)
-generate_data(beta_0, beta_1, n_subjects_per_treatment, V_random)
-generate_data(beta_0, beta_1, n_subjects_per_treatment, V_ar)
+df_comp <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_comp)
+df_random <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_random)
+df_ar <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_ar)
+
+# Example F and LRT 
+# LRT
+# Full model: includes interaction (tests different slopes)
+mod_full <- lmer(y ~ time * group + (1 | id), data = df_comp, REML = FALSE)
+
+# Reduced model: no interaction (same slope across groups)
+mod_red  <- lmer(y ~ time + group + (1 | id), data = df_comp, REML = FALSE)
+
+lrt_result <- anova(mod_red, mod_full, test = "LRT")
+p_lrt <- lrt_result$`Pr(>Chisq)`[2]
+print(p_lrt)
+
+# REML ***TODO: NOT SURE WHAT THE DEGREES OF FREEDOM ARE HERE. THIS NEEDS TO BE CHECKED***
+mod_reml <- lmer(y ~ time * group + (1 | id), data=df_comp, REML=TRUE)
+p_f <- anova(mod_reml)["time:group", "Pr(>F)"]
+print(p_f)
 
 
+### Simulation ###
+set.seed(77)
+ 
+n_simulations_per_pval <- 500
 
+beta_0 <- 10
+beta_1 <- 1
+alpha = .05
+n_subjects_per_treatment_values <- c(3, 5, 10, 50)
+covariance_structures <- list(V_comp, V_random, V_ar)
+covariance_structures_names <- c("Compound Symmetric", "Random Coefficients", "Autoregressive")
+results <- data.frame()
+for (i in 1:n_simulations_per_pval){
+  for (beta_1_sim in c(0, beta_1)){
+    for (n in n_subjects_per_treatment_values){
+      for (j in 1:3){
+        print(paste("Simulation:", i, "Subjects:", n, "Covariance Structure:", covariance_structures_names[j], "Effect Size:", ifelse(beta_1_sim == 0, "null", "alternative")))
+        df <- generate_data(beta_0, beta_1_sim, n, covariance_structures[[j]])
+
+        # Fit models
+        mod_full <- lmer(y ~ time * group + (1 | id), data = df, REML = FALSE)
+        mod_red  <- lmer(y ~ time + group + (1 | id), data = df, REML = FALSE)
+        lrt_result <- anova(mod_red, mod_full, test = "LRT")
+        p_lrt <- lrt_result$`Pr(>Chisq)`[2]
+
+        mod_reml <- lmer(y ~ time * group + (1 | id), data=df, REML=TRUE)
+        p_f <- anova(mod_reml)["time:group", "Pr(>F)"]
+
+        # Store results
+        results <- rbind(results, data.frame(
+          simulation = i,
+          n_subjects = n,
+          covariance_structure = covariance_structures_names[j],
+          effect_size = ifelse(beta_1_sim == 0, "null", "alternative"), 
+          p_lrt = round(p_lrt, 5),
+          p_f = round(p_f, 5), 
+          reject_lrt = ifelse(p_lrt < alpha, 1, 0),
+          reject_f = ifelse(p_f < alpha, 1, 0), 
+          accuracy_lrt = ifelse((p_lrt < alpha & beta_1_sim == 1) | (p_lrt > alpha & beta_1_sim == 0), 1, 0), 
+          accuracy_f = ifelse((p_f < alpha & beta_1_sim == 1) | (p_f > alpha & beta_1_sim == 0), 1, 0)
+        ))
+      }
+    }
+  }
+}
+
+summary_long <- summary_results %>%
+  pivot_longer(cols = c(power_LRT, power_F),
+               names_to = "test",
+               values_to = "prob") %>%
+  mutate(effect_size = ifelse(effect_size == "null", "Type I Error", "Power"),
+         test = ifelse(test == "power_LRT", "LRT", "F-test"))
+
+summary_long_type1 <- summary_long %>% 
+  filter(effect_size == "Type I Error")
+
+ggplot(summary_long_type1,
+       aes(x = n_subjects, y = prob,
+           color = covariance_structure,
+           linetype = test)) +
+  geom_line(linewidth = 1.1) +
+  scale_y_continuous(limits = c(0,1)) +
+  theme_minimal(base_size = 14) +
+  labs(x = "Number of Subjects per Treatment",
+       y = "Type I Error Rate",
+       color = "Covariance Structure",
+       linetype = "Test")
