@@ -2,6 +2,12 @@
 library(tidyverse)
 library(lme4)
 library(lmerTest)
+library(nlme)
+
+## NOTES
+## id is the subject
+## group is the treatment
+## time is the repeated measure (i.e. what beta 1 is multiplied by)
 
 generate_compound_symmetric_covariance_matrix <- function(sigma2, rho, n_measures){
   V_within <- sigma2 * ((1 - rho) * diag(n_measures) + rho * matrix(1, n_measures, n_measures))
@@ -71,29 +77,27 @@ generate_data <- function(beta_0, beta_1, n_subjects_per_treatment, V){
 # Example Generate Data
 beta_0 <- 10
 beta_1 <- 5
-n_subjects_per_treatment <- 4
+n_subjects_per_treatment <- 2
 
 df_comp <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_comp)
 df_random <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_random)
 df_ar <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_ar)
 
-# Example F and LRT 
-# LRT
-# Full model: includes interaction (tests different slopes)
-mod_full <- lmer(y ~ time * group + (1 | id), data = df_comp, REML = FALSE)
+# Example Compound Symetric
+mod_full <- gls(y ~ 1 + time + time:group, data = df_comp,
+                correlation = corCompSymm(form = ~ 1 | id),
+                method = "ML")
+p_lrt <- anova(mod_full)$"p-value"[3]
 
-# Reduced model: no interaction (same slope across groups)
-mod_red  <- lmer(y ~ time + group + (1 | id), data = df_comp, REML = FALSE)
-
-lrt_result <- anova(mod_red, mod_full, test = "LRT")
-p_lrt <- lrt_result$`Pr(>Chisq)`[2]
+mod_reml <- gls(y ~ 1 + time + time:group, data = df_comp,
+                correlation = corCompSymm(form = ~ 1 | id),
+                method = "REML")
+p_f <- anova(mod_reml)$"p-value"[3]
 print(p_lrt)
-
-# REML ***TODO: NOT SURE WHAT THE DEGREES OF FREEDOM ARE HERE. THIS NEEDS TO BE CHECKED***
-mod_reml <- lmer(y ~ time * group + (1 | id), data=df_comp, REML=TRUE)
-p_f <- anova(mod_reml)["time:group", "Pr(>F)"]
 print(p_f)
 
+# Example RC
+# Example Autoregressive
 
 ### Simulation ###
 set.seed(77)
@@ -112,16 +116,39 @@ for (i in 1:n_simulations_per_pval){
     for (n in n_subjects_per_treatment_values){
       for (j in 1:3){
         print(paste("Simulation:", i, "Subjects:", n, "Covariance Structure:", covariance_structures_names[j], "Effect Size:", ifelse(beta_1_sim == 0, "null", "alternative")))
-        df <- generate_data(beta_0, beta_1_sim, n, covariance_structures[[j]])
-
+        df <- generate_data(beta_0, beta_1_sim, n, covariance_structures[[j]]) 
         # Fit models
-        mod_full <- lmer(y ~ time * group + (1 | id), data = df, REML = FALSE)
-        mod_red  <- lmer(y ~ time + group + (1 | id), data = df, REML = FALSE)
-        lrt_result <- anova(mod_red, mod_full, test = "LRT")
-        p_lrt <- lrt_result$`Pr(>Chisq)`[2]
+        if (j == 1){
+          mod_lrt <- gls(y ~ 1 + time + time:group, data = df_comp,
+                          correlation = corCompSymm(form = ~ 1 | id),
+                          method = "ML")
+          p_lrt <- anova(mod_lrt)$"p-value"[3]
 
-        mod_reml <- lmer(y ~ time * group + (1 | id), data=df, REML=TRUE)
-        p_f <- anova(mod_reml)["time:group", "Pr(>F)"]
+          mod_reml <- gls(y ~ 1 + time + time:group, data = df_comp,
+                          correlation = corCompSymm(form = ~ 1 | id),
+                          method = "REML")
+          p_f <- anova(mod_reml)$"p-value"[3]
+        }
+
+        if (j == 2){
+          mod_lrt <- lmer(y ~ 1 + time + time:group + (1 | id), data = df, REML = FALSE)
+          p_lrt <- anova(mod_lrt)["time:group", "Pr(>F)"]
+
+          mod_reml <- lmer(y ~ 1 + time + time:group + (1 | id), data=df, REML=TRUE)
+          p_f <- anova(mod_reml)["time:group", "Pr(>F)"]
+        }
+
+        if (j == 3){
+          mod_lrt <- gls(y ~ 1 + time + time:group, data = df,
+                          correlation = corAR1(form = ~ time | id),
+                          method = "ML")
+          p_lrt <- anova(mod_lrt)$"p-value"[3]
+
+          mod_reml <- gls(y ~ 1 + time + time:group, data = df,
+                          correlation = corAR1(form = ~ time | id),
+                          method = "REML")
+          p_f <- anova(mod_reml)$"p-value"[3]
+        }
 
         # Store results
         results <- rbind(results, data.frame(
