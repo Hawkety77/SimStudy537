@@ -98,7 +98,7 @@ print(p_f)
 ### Simulation ###
 set.seed(77)
  
-n_simulations_per_pval <- 500
+n_simulations_per_pval <- 10
 
 beta_0 <- 10
 beta_1 <- 1
@@ -140,6 +140,14 @@ for (i in 1:n_simulations_per_pval){
     }
   }
 }
+
+summary_results <- results %>%
+  group_by(n_subjects, covariance_structure, effect_size) %>%
+  summarize(
+    power_LRT = mean(reject_lrt),
+    power_F   = mean(reject_f),
+    .groups = "drop"
+  )
 
 summary_long <- summary_results %>%
   pivot_longer(cols = c(power_LRT, power_F),
