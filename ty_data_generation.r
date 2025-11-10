@@ -77,7 +77,7 @@ generate_data <- function(beta_0, beta_1, n_subjects_per_treatment, V){
 # Example Generate Data
 beta_0 <- 10
 beta_1 <- 0
-n_subjects_per_treatment <- 10
+n_subjects_per_treatment <- 100
 
 df_comp <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_comp)
 df_random <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_random)
@@ -100,6 +100,19 @@ print(p_f)
 
 # Example RC
 # Example Autoregressive
+mod_full <- gls(y ~ 1 + time + time:group, data = df_ar,
+                correlation = corAR1(form = ~ time | id),
+                method = "ML")
+p_lrt <- anova(mod_full)$"p-value"[3]
+
+mod_reml <- gls(y ~ 1 + time + time:group, data = df_ar,
+                correlation = corAR1(form = ~ time | id),
+                method = "REML")
+p_f <- anova(mod_reml)$"p-value"[3]
+anova(mod_full)
+anova(mod_reml)
+print(p_lrt)
+print(p_f)
 
 ### Simulation ###
 set.seed(77)
