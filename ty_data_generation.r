@@ -76,8 +76,8 @@ generate_data <- function(beta_0, beta_1, n_subjects_per_treatment, V){
 
 # Example Generate Data
 beta_0 <- 10
-beta_1 <- 5
-n_subjects_per_treatment <- 2
+beta_1 <- 0
+n_subjects_per_treatment <- 10
 
 df_comp <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_comp)
 df_random <- generate_data(beta_0, beta_1, n_subjects_per_treatment, V_random)
@@ -93,6 +93,8 @@ mod_reml <- gls(y ~ 1 + time + time:group, data = df_comp,
                 correlation = corCompSymm(form = ~ 1 | id),
                 method = "REML")
 p_f <- anova(mod_reml)$"p-value"[3]
+anova(mod_full)
+anova(mod_reml)
 print(p_lrt)
 print(p_f)
 
@@ -102,7 +104,7 @@ print(p_f)
 ### Simulation ###
 set.seed(77)
  
-n_simulations_per_pval <- 10
+n_simulations_per_pval <- 100
 
 beta_0 <- 10
 beta_1 <- 1
@@ -119,12 +121,12 @@ for (i in 1:n_simulations_per_pval){
         df <- generate_data(beta_0, beta_1_sim, n, covariance_structures[[j]]) 
         # Fit models
         if (j == 1){
-          mod_lrt <- gls(y ~ 1 + time + time:group, data = df_comp,
+          mod_lrt <- gls(y ~ 1 + time + time:group, data = df,
                           correlation = corCompSymm(form = ~ 1 | id),
                           method = "ML")
           p_lrt <- anova(mod_lrt)$"p-value"[3]
 
-          mod_reml <- gls(y ~ 1 + time + time:group, data = df_comp,
+          mod_reml <- gls(y ~ 1 + time + time:group, data = df,
                           correlation = corCompSymm(form = ~ 1 | id),
                           method = "REML")
           p_f <- anova(mod_reml)$"p-value"[3]
