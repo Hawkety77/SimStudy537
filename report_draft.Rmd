@@ -4,7 +4,6 @@ author: "Talmage Hilton, Gavin Hatch, Ty Hawkes"
 date: "`r Sys.Date()`"
 output:
   pdf_document:
-    latex_engine: xelatex
   html_document:
     df_print: paged
 fontsize: 11pt
@@ -18,105 +17,66 @@ header-includes:
 # Intro
 Repeated-measures (or longitudinal) data often appears in experimental studies. This type of data is defined as data where multiple observations are collected from the same subject over time.  Because responses within a subject are typically correlated, specifying an appropriate covariance structure is essential for valid inference. In this simulation study, we are interested in comparing the performance of the Likelihood Ratio Test (LRT) and the F-test in detecting differences in slopes between two treatment groups in longitudinal data. We evaluate the Type I error rates and power of both tests for small and large sample sizes under three different covariance structures: compound symmetric, random coefficients, and autoregressive. Our goal is to understand how the choice of covariance structure and estimation method affect the accuracy and power of tests for treatment effects.
 
-In this simulation study, we will see that larger sample sizes and the use of REML lead to the most accurate Type I error rates across all covariance structures. 
+In this simulation study, we will see that larger sample sizes and the use of REML lead to the most accurate Type I error rates across all covariance structures, and that LRT generally has higher power than the F-test, especially in smaller sample sizes. Additionally, we will observe that the random coefficients structure tends to have higher Type I error rates and lower power compared to the other two structures.
 
 
 # Data Generation
-To generate the data, we define three covariance structures that will be used for each subject:
 
-#### 1. Compound Symmetric: 
-Assumes constant variance and equal correlation between all observations.
+We consider three covariance structures for repeated measures on each subject:
 
+$\textbf{Compound Symmetric (CS)}$
+Assumes constant variance and equal correlation among observations:
 $$
-\operatorname{Var}(Y_{ij}) = \sigma^2, \quad \forall i,j
-$$
-
-$$
-\operatorname{Cov}(Y_{ij}, Y_{ik}) = \rho \sigma^2, \quad \forall i \neq k
+\operatorname{Var}(Y_{ij}) = \sigma^2, \quad 
+\operatorname{Cov}(Y_{ij}, Y_{ik}) = \rho\sigma^2 \ (i \neq k)
 $$
 
-#### 2. Random Coefficients: 
-Incorporates random intercepts and slopes.
-
-
+$\textbf{Random Coefficients (RC)}$
+Allows random intercepts and slopes:
 $$
 \Sigma = 
 \begin{pmatrix}
 \sigma_0^2 & \sigma_{01} \\
 \sigma_{01} & \sigma_1^2
-\end{pmatrix}
+\end{pmatrix},
+\quad 
+\operatorname{Cov}(Y_i) = Z_i \Sigma Z_i' + \sigma^2 I
 $$
-
+with 
 $$
-\text{Cov}(Y_i) = Z_i 
+Z_i =
 \begin{pmatrix}
-\sigma_0^2 & \sigma_{01} \\
-\sigma_{01} & \sigma_1^2
-\end{pmatrix}
-Z_i' + \sigma^2 I
-$$
-
-where
-
-$$
-Z_i = 
-\begin{pmatrix}
-1 & t_{i1} \\
-1 & t_{i2} \\
-\vdots & \vdots \\
+1 & t_{i1}\\
+\vdots & \vdots\\
 1 & t_{in_i}
 \end{pmatrix}
 $$
 
-#### 3. Autoregressive: 
-Assumes that correlations between observations decrease exponentially with increasing time lag.
-
+$\textbf{Autoregressive (AR(1))}$
+Correlations decay exponentially with time lag:
 $$
-\operatorname{Cov}(Y_{ij}, Y_{ik}) = \sigma^2 \rho^{|t_{ij} - t_{ik}|}
-$$
-
-We simulate data for two treatment groups (control and treatment). Each subject will have repeated measurements over 5 equally spaced time points. The response variable is generated based on a linear model with fixed effects for time and treatment, as well as random effects according to the specified covariance structure. Specifically, our data can be modeled with the following equation:
-
-$$
-Y_{ij} = \beta_0 + \beta_1 \, \text{time}_{ij} \times \text{treatment}_i + \epsilon_{ij},
+\operatorname{Cov}(Y_{ij}, Y_{ik}) = \sigma^2\rho^{|t_{ij}-t_{ik}|}
 $$
 
+We simulate two treatment groups measured at 5 equally spaced time points, modeled as:
+$$
+Y_{ij} = \beta_0 + \beta_1(\text{time}_{ij} \times \text{treatment}_i) + \epsilon_{ij},
+$$
 where 
+$$
+\boldsymbol{\epsilon}_i \sim N(\mathbf{0}, V),
+$$
+and \(V\) is one of the structures above.  
+
+To ensure comparable variability across structures, constants are chosen to yield approximately equal generalized variance (\(18{,}570\)):
 
 $$
-\boldsymbol{\epsilon}_i = 
-\begin{pmatrix}
-\epsilon_{i1} \\
-\epsilon_{i2} \\
-\vdots \\
-\epsilon_{in_i}
-\end{pmatrix}
-\sim N(\mathbf{0}, V),
+\begin{array}{lll}
+\text{CS:} & \sigma^2 = 10, & \rho = 0.5, \\
+\text{RC:} & \sigma_b^2 = \sigma_c^2 = 1, & \sigma_\epsilon^2 = 4.3833424, \\
+\text{AR(1):} & \sigma^2 = 10, & \phi = 0.584776.
+\end{array}
 $$
-
-and \( V \) represents one of the three covariance structures defined above (Compound Symmetric, Random Coefficients, or Autoregressive). 
-
-Each subject’s repeated measures are thus correlated according to \( V \), while treatment effects are introduced through the fixed effects \( \beta_0 \) and \( \beta_1 \).
-
-To allow accurate comparisons between each dataset, the following constants have been selected that lead to approximately equal generalized variances:
-
-
-For Compound Symmetry
-$$
-\sigma^2_{\text{CS}} = 10, \quad \rho = 0.5
-$$
-
-For Random Coefficients
-$$
-\sigma_b^2 = 1, \quad \sigma_c^2 = 1, \quad \sigma_\epsilon^2 = 4.3833424
-$$
-
-For Autoregression
-$$
-\sigma^2_{\text{AR}} = 10, \quad \phi = 0.584776
-$$
-
-The generalized variance for each of these is equal to $18,570$.
 
 # Methods
 Each dataset was analyzed using models that corresponded to the true covariance structure:
@@ -137,9 +97,9 @@ For each fitted model, two tests for the treatment-by-time interaction were perf
 Comparing models with and without the interaction term, estimated using maximum likelihood (ML).
 
 - F-test:
-Based on approximate denominator degrees of freedom under restricted maximum likelihood (REML).
+Based on Satterthwaite's approximate denominator degrees of freedom under restricted maximum likelihood (REML).
 
-Across simulations, we computed:
+Across 10,000 simulations, we computed:
 
 - Type I Error Rate: proportion of rejections when $\beta_1 = 0$
 
@@ -147,8 +107,123 @@ Across simulations, we computed:
 
 
 # Results
-Type I Error
+### Type I Error
 
-Our findings show that larger sample sizes and the use of REML lead to the most accurate Type I error rates across all covariance structures. 
+Our findings show that larger sample sizes and the use of REML lead to the most accurate Type I error rates across all covariance structures. The results of this simulation study are summarized in the tables and figures below.
 
-[table]
+```{r, echo = FALSE, message = FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+
+results <- read.csv("/Users/hawkety77/School Projects/537/SimStudy537/simulation_results.csv")
+
+summary_results <- results %>%
+  group_by(n_subjects, covariance_structure, effect_size) %>%
+  summarize(
+    power_LRT = mean(reject_lrt),
+    power_F   = mean(reject_f),
+    .groups = "drop"
+  )
+
+# Type I Error Frequency Table
+type1_table <- summary_results %>%
+  filter(effect_size == "null") %>%
+  select(n_subjects, covariance_structure, power_LRT, power_F) %>%
+  pivot_longer(cols = c(power_LRT, power_F),
+               names_to = "test",
+               values_to = "prob") %>%
+  mutate(test = ifelse(test == "power_LRT", "LRT", "REML")) %>%
+  pivot_wider(names_from = c(covariance_structure, test),
+              values_from = prob) %>%
+  arrange(n_subjects)
+
+colnames(type1_table) <- c("n_subjects", "LRT", "REML", "LRT", "REML", "LRT", "REML")
+
+kable(type1_table, digits = 3, caption = "Type I Error Frequency") %>%
+  add_header_above(c(" " = 1,
+                     "Autoregressive" = 2,
+                     "Random" = 2,
+                     "Compound Symmetric" = 2)) %>%
+  kable_styling(full_width = FALSE)
+```
+
+```{r, echo = FALSE, fig.align = "center", fig.height = 3}
+summary_long <- summary_results %>%
+  pivot_longer(cols = c(power_LRT, power_F),
+               names_to = "test",
+               values_to = "prob") %>%
+  mutate(effect_size = ifelse(effect_size == "null", "Type I Error", "Power"),
+         test = ifelse(test == "power_LRT", "LRT", "F-test"))
+
+summary_long_type1 <- summary_long %>% 
+  filter(effect_size == "Type I Error")
+
+ggplot(summary_long_type1,
+       aes(x = n_subjects, y = prob,
+           color = covariance_structure,
+           linetype = test)) +
+  geom_line(linewidth = .5) +
+  scale_y_continuous(limits = c(0,.20)) +
+  theme_minimal(base_size = 14) +
+  labs(x = "Number of Subjects per Treatment",
+       y = "Type I Error Rate",
+       color = "Covariance Structure",
+       linetype = "Test")
+```
+
+As expected, we observe that as the number of subjects increases, the Type I error rates for both tests converge towards the nominal level of 0.05 across all covariance structures. The REML-based F-test generally performs better than the ML-based LRT, especially in smaller sample sizes. The difference between REML and LRT is almost negligible for sample size 10 and larger for the autoregressive and compound symetric structures, while the random coefficients structure shows a more pronounced difference even at larger sample sizes. Among the three tests, the random coefficients structure shows the highest type I error rates, followed by compound symmetric, and then autoregressive, which has the lowest type I error rates.
+
+### Power
+
+Our findings show that larger sample sizes lead to increased power across all covariance structures and tests. The results of this simulation study are summarized in the tables and figures below.
+
+```{r, echo = FALSE}
+# Successful Rejection Frequency (Power) Table
+power_table <- summary_results %>%
+  filter(effect_size == "alternative") %>%
+  select(n_subjects, covariance_structure, power_LRT, power_F) %>%
+  pivot_longer(cols = c(power_LRT, power_F),
+               names_to = "test",
+               values_to = "prob") %>%
+  mutate(test = ifelse(test == "power_LRT", "LRT", "REML")) %>%
+  pivot_wider(names_from = c(covariance_structure, test),
+              values_from = prob) %>%
+  arrange(n_subjects)
+
+colnames(power_table) <- c("n_subjects", "LRT", "REML", "LRT", "REML", "LRT", "REML")
+
+kable(power_table, digits = 3, caption = "Successful Rejection Frequency") %>%
+  add_header_above(c(" " = 1,
+                     "Autoregressive" = 2,
+                     "Random" = 2,
+                     "Compound Symmetric" = 2)) %>%
+  kable_styling(full_width = FALSE)
+```
+
+
+```{r, echo = FALSE, fig.align = "center", fig.height = 3}
+summary_long_power <- summary_long %>% 
+  filter(effect_size == "Power")
+ggplot(summary_long_power,
+       aes(x = n_subjects, y = prob,
+           color = covariance_structure,
+           linetype = test)) +
+  geom_line(linewidth = .5) +
+  scale_y_continuous(limits = c(0,1)) +
+  theme_minimal(base_size = 14) +
+  labs(x = "Number of Subjects per Treatment",
+       y = "Power",
+       color = "Covariance Structure",
+       linetype = "Test")
+```
+
+As expected, power increases with sample size for both tests across all covariance structures. The ML-based LRT consistently shows slightly higher power than the REML-based F-test, particularly in smaller sample sizes. The compound symetric model shows the highest power, followed by the autoregressive model, and then the random coefficients model, which has the lowest power. The difference in power is most pronounced in smaller sample sizes and becomes almost negligible after n = 10 subjects per treatment.
+
+These findings suggest that random coefficients models may require larger sample sizes to achieve comparable power to the other covariance structures. In addition to this, REML estimation appears to be more conservative than LRT estimation, leading to slightly lower power but more accurate Type I error rates.
+
+# Conclusion
+In this simulation study, we evaluated the performance of the Likelihood Ratio Test (LRT) and the REML-based F-test in detecting treatment-by-time interactions in longitudinal data under three different covariance structures: compound symmetric, random coefficients, and autoregressive. Our results indicate that larger sample sizes lead to more accurate Type I error rates and increased power for both tests across all covariance structures. The REML-based F-test generally outperformed the ML-based LRT in terms of Type I error control, particularly in smaller sample sizes. However, the LRT demonstrated slightly higher power, especially in smaller samples. Among the covariance structures, the random coefficients model exhibited the highest Type I error rates and lowest power, while the compound symmetric model showed the opposite trend. These findings highlight the importance of selecting appropriate estimation methods and covariance structures when analyzing longitudinal data to ensure valid inference regarding treatment effects.
+

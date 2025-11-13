@@ -4,7 +4,7 @@ library(ggplot2)
 library(knitr)
 library(kableExtra)
 
-results <- read.csv("simulation_results.csv")
+results <- read.csv("SimStudy537/simulation_results.csv")
 
 summary_results <- results %>%
   group_by(n_subjects, covariance_structure, effect_size) %>%
@@ -28,8 +28,8 @@ ggplot(summary_long_type1,
        aes(x = n_subjects, y = prob,
            color = covariance_structure,
            linetype = test)) +
-  geom_line(linewidth = 1.1) +
-  scale_y_continuous(limits = c(0,1)) +
+  geom_line(linewidth = .5) +
+  scale_y_continuous(limits = c(0,.20)) +
   theme_minimal(base_size = 14) +
   labs(x = "Number of Subjects per Treatment",
        y = "Type I Error Rate",
@@ -43,7 +43,7 @@ ggplot(summary_long_power,
        aes(x = n_subjects, y = prob,
            color = covariance_structure,
            linetype = test)) +
-  geom_line(linewidth = 1.1) +
+  geom_line(linewidth = .5) +
   scale_y_continuous(limits = c(0,1)) +
   theme_minimal(base_size = 14) +
   labs(x = "Number of Subjects per Treatment",
@@ -54,26 +54,47 @@ ggplot(summary_long_power,
 
 # make table of results
 
-# Type I Error table
+# Type I Error Frequency Table
 type1_table <- summary_results %>%
   filter(effect_size == "null") %>%
+  select(n_subjects, covariance_structure, power_LRT, power_F) %>%
   pivot_longer(cols = c(power_LRT, power_F),
                names_to = "test",
                values_to = "prob") %>%
-  mutate(test = ifelse(test == "power_LRT", "LRT", "F-test")) %>%
-  pivot_wider(names_from = c(covariance_structure, test), values_from = prob)
+  mutate(test = ifelse(test == "power_LRT", "LRT", "REML")) %>%
+  pivot_wider(names_from = c(covariance_structure, test),
+              values_from = prob) %>%
+  arrange(n_subjects)
 
-kable(type1_table, digits = 3, caption = "Type I Error Rates by Covariance Structure and Test") %>%
+colnames(type1_table) <- c("n_subjects", "LRT", "REML", "LRT", "REML", "LRT", "REML")
+
+kable(type1_table, digits = 3, caption = "Type I Error Frequency") %>%
+  add_header_above(c(" " = 1,
+                     "Autoregressive" = 2,
+                     "Random" = 2,
+                     "Compound Symmetric" = 2)) %>%
   kable_styling(full_width = FALSE)
 
-# Power table
+# Successful Rejection Frequency (Power) Table
 power_table <- summary_results %>%
   filter(effect_size == "alternative") %>%
+  select(n_subjects, covariance_structure, power_LRT, power_F) %>%
   pivot_longer(cols = c(power_LRT, power_F),
                names_to = "test",
                values_to = "prob") %>%
-  mutate(test = ifelse(test == "power_LRT", "LRT", "F-test")) %>%
-  pivot_wider(names_from = c(covariance_structure, test), values_from = prob)
+  mutate(test = ifelse(test == "power_LRT", "LRT", "REML")) %>%
+  pivot_wider(names_from = c(covariance_structure, test),
+              values_from = prob) %>%
+  arrange(n_subjects)
 
-kable(power_table, digits = 3, caption = "Power by Covariance Structure and Test") %>%
+colnames(power_table) <- c("n_subjects", "LRT", "REML", "LRT", "REML", "LRT", "REML")
+
+kable(power_table, digits = 3, caption = "Successful Rejection Frequency") %>%
+  add_header_above(c(" " = 1,
+                     "Autoregressive" = 2,
+                     "Random" = 2,
+                     "Compound Symmetric" = 2)) %>%
   kable_styling(full_width = FALSE)
+
+##
+
